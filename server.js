@@ -1,7 +1,7 @@
 // TikTok → Roblox Bridge Server
 // Установка: npm install @tiktoklive/connector express cors
 
-const { WebcastPushConnection } = require("@tiktoklive/connector");
+const { WebcastPushConnection } = require("tiktok-live-connector");
 const express = require("express");
 const cors = require("cors");
 
