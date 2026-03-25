@@ -1,6 +1,3 @@
-// TikTok → Roblox Bridge Server
-// Установка: npm install @tiktoklive/connector express cors
-
 const { WebcastPushConnection } = require("tiktok-live-connector");
 const express = require("express");
 const cors = require("cors");
@@ -9,159 +6,162 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ─── Очередь событий ───────────────────────────────────────────────────────
-// Roblox будет опрашивать сервер и забирать события
 const eventQueue = [];
-const MAX_QUEUE = 200;
 
 function pushEvent(type, data) {
-  if (eventQueue.length >= MAX_QUEUE) eventQueue.shift(); // удаляем старые
-  eventQueue.push({ type, data, timestamp: Date.now() });
+    eventQueue.push({ type, data, timestamp: Date.now() });
+    if (eventQueue.length > 200) eventQueue.shift();
+    
+    if (type === 'chat') {
+        console.log(`💬 ${data.nickname}: ${data.message}`);
+    } else if (type === 'connected') {
+        console.log(`✅ Подключен к @${data.username}`);
+    }
 }
 
-// ─── TikTok подключение ────────────────────────────────────────────────────
 let tiktokConnection = null;
 let currentUsername = null;
 let isConnected = false;
 
 function connectToTikTok(username) {
-  if (tiktokConnection) {
-    tiktokConnection.disconnect();
-  }
-
-  currentUsername = username;
-  tiktokConnection = new WebcastPushConnection(username, {
-    processInitialData: false,
-    fetchRoomInfoOnConnect: true,
-    enableExtendedGiftInfo: true,
-    reconnectEnabled: true,
-    reconnectDelay: 1000,
-  });
-
-  // ── Подключение ──
-  tiktokConnection.connect().then((state) => {
-    isConnected = true;
-    console.log(`✅ Подключён к трансляции @${username} | RoomID: ${state.roomId}`);
-    pushEvent("connected", { username, roomId: state.roomId });
-  }).catch((err) => {
-    isConnected = false;
-    console.error("❌ Ошибка подключения:", err.message);
-    pushEvent("error", { message: err.message });
-  });
-
-  tiktokConnection.on("disconnected", () => {
-    isConnected = false;
-    console.log("🔌 Отключён от TikTok");
-    pushEvent("disconnected", { username });
-  });
-
-  // ── Подарки 🎁 ──
-  tiktokConnection.on("gift", (data) => {
-    // Только завершённые подарки (не стримы монет)
-    if (data.giftType === 1 && !data.repeatEnd) return;
-
-    const event = {
-      username:    data.uniqueId,
-      nickname:    data.nickname,
-      giftName:    data.giftName,
-      giftId:      data.giftId,
-      giftCount:   data.repeatCount || 1,
-      diamondCount: data.diamondCount || 0,
-      totalDiamonds: (data.diamondCount || 0) * (data.repeatCount || 1),
-      pictureUrl:  data.giftPictureUrl || "",
-    };
-
-    console.log(`🎁 Подарок: ${event.username} → ${event.giftName} x${event.giftCount}`);
-    pushEvent("gift", event);
-  });
-
-  // ── Чат 💬 ──
-  tiktokConnection.on("chat", (data) => {
-    const event = {
-      username: data.uniqueId,
-      nickname: data.nickname,
-      message:  data.comment,
-    };
-
-    console.log(`💬 Чат: ${event.nickname}: ${event.message}`);
-    pushEvent("chat", event);
-  });
-
-  // ── Лайки ❤️ ──
-  tiktokConnection.on("like", (data) => {
-    const event = {
-      username:   data.uniqueId,
-      nickname:   data.nickname,
-      likeCount:  data.likeCount,
-      totalLikes: data.totalLikeCount,
-    };
-    pushEvent("like", event);
-  });
-
-  // ── Новый зритель 👁 ──
-  tiktokConnection.on("member", (data) => {
-    const event = {
-      username: data.uniqueId,
-      nickname: data.nickname,
-      action:   "joined",
-    };
-    pushEvent("member", event);
-  });
-
-  // ── Подписка ⭐ ──
-  tiktokConnection.on("follow", (data) => {
-    const event = {
-      username: data.uniqueId,
-      nickname: data.nickname,
-    };
-    pushEvent("follow", event);
-  });
-
-  // ── Статистика трансляции ──
-  tiktokConnection.on("roomUser", (data) => {
-    pushEvent("viewers", { count: data.viewerCount });
-  });
+    console.log(`\n🔌 Подключаюсь к @${username}...`);
+    
+    if (tiktokConnection) {
+        try { 
+            tiktokConnection.disconnect(); 
+            console.log("   Отключил старую сессию");
+        } catch(e) {}
+    }
+    
+    currentUsername = username;
+    
+    // Создаем новое подключение
+    tiktokConnection = new WebcastPushConnection(username, {
+        processInitialData: true,
+        fetchRoomInfoOnConnect: true,
+        enableExtendedGiftInfo: true,
+        reconnectEnabled: true,
+        reconnectDelay: 3000,
+        requestHeaders: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+    });
+    
+    // Подключаемся
+    tiktokConnection.connect()
+        .then((state) => {
+            isConnected = true;
+            console.log(`✅✅✅ ПОДКЛЮЧЕНО! @${username}`);
+            console.log(`   Room ID: ${state.roomId}`);
+            console.log(`   Зрителей: ${state.viewerCount || '?'}`);
+            console.log(`   Стрим активен! Ожидание сообщений...\n`);
+            pushEvent("connected", { username, roomId: state.roomId });
+        })
+        .catch((err) => {
+            isConnected = false;
+            console.error(`❌❌❌ ОШИБКА ПОДКЛЮЧЕНИЯ: ${err.message}`);
+            
+            if (err.message.includes("not live")) {
+                console.log(`   💡 Стример @${username} не в эфире!`);
+            } else if (err.message.includes("not found")) {
+                console.log(`   💡 Пользователь @${username} не найден!`);
+            } else {
+                console.log(`   💡 Проверьте: 1) Стрим идет? 2) Ник правильный?`);
+            }
+            
+            pushEvent("error", { message: err.message });
+        });
+    
+    // Обработчики событий
+    tiktokConnection.on("chat", (data) => {
+        pushEvent("chat", {
+            username: data.uniqueId,
+            nickname: data.nickname,
+            message: data.comment,
+        });
+    });
+    
+    tiktokConnection.on("gift", (data) => {
+        if (data.giftType === 1 && !data.repeatEnd) return;
+        pushEvent("gift", {
+            username: data.uniqueId,
+            nickname: data.nickname,
+            giftName: data.giftName,
+            giftCount: data.repeatCount || 1,
+            diamondCount: data.diamondCount || 0,
+        });
+    });
+    
+    tiktokConnection.on("like", (data) => {
+        pushEvent("like", {
+            username: data.uniqueId,
+            nickname: data.nickname,
+            likeCount: data.likeCount,
+        });
+    });
+    
+    tiktokConnection.on("member", (data) => {
+        pushEvent("member", {
+            username: data.uniqueId,
+            nickname: data.nickname,
+        });
+    });
+    
+    tiktokConnection.on("follow", (data) => {
+        pushEvent("follow", {
+            username: data.uniqueId,
+            nickname: data.nickname,
+        });
+    });
+    
+    tiktokConnection.on("disconnected", () => {
+        isConnected = false;
+        console.log(`🔌 Отключен от @${username}`);
+        pushEvent("disconnected", { username });
+    });
 }
 
-// ─── API маршруты ──────────────────────────────────────────────────────────
-
-// Roblox вызывает этот endpoint, чтобы забрать события
+// API endpoints
 app.get("/events", (req, res) => {
-  const events = [...eventQueue];
-  eventQueue.length = 0; // очищаем после отправки
-  res.json({ success: true, events, connected: isConnected });
+    const events = [...eventQueue];
+    eventQueue.length = 0;
+    res.json({ success: true, events, connected: isConnected });
 });
 
-// Подключиться к трансляции (можно вызвать через Roblox или вручную)
 app.post("/connect", (req, res) => {
-  const { username } = req.body;
-  if (!username) return res.status(400).json({ error: "username required" });
-
-  connectToTikTok(username);
-  res.json({ success: true, message: `Connecting to @${username}` });
+    const { username } = req.body;
+    if (!username) {
+        return res.status(400).json({ error: "username required" });
+    }
+    console.log(`\n📡 ПОЛУЧЕН ЗАПРОС НА ПОДКЛЮЧЕНИЕ К @${username}`);
+    connectToTikTok(username);
+    res.json({ success: true, message: `Connecting to @${username}` });
 });
 
-// Статус сервера
 app.get("/status", (req, res) => {
-  res.json({
-    connected: isConnected,
-    username:  currentUsername,
-    queueSize: eventQueue.length,
-    uptime:    process.uptime(),
-  });
+    res.json({
+        connected: isConnected,
+        username: currentUsername,
+        queueSize: eventQueue.length,
+        uptime: process.uptime(),
+    });
 });
 
-// ─── Запуск ────────────────────────────────────────────────────────────────
+app.get("/", (req, res) => {
+    res.send("TikTok-Roblox Bridge Server is running! Use /status to check connection");
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Сервер запущен: http://localhost:${PORT}`);
-  console.log(`📡 Roblox должен опрашивать: http://YOUR_IP:${PORT}/events`);
-  console.log(`\nПодключение к TikTok:`);
-  console.log(`  POST http://localhost:${PORT}/connect`);
-  console.log(`  Body: { "username": "tiktok_username" }`);
+    console.log(`\n🚀 Сервер запущен на порту ${PORT}`);
+    console.log(`📡 URL: https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'localhost'}`);
+    console.log(`\n💡 Чтобы подключиться к стримеру, отправьте POST запрос:`);
+    console.log(`   curl -X POST https://ваш-сервер.onrender.com/connect -H "Content-Type: application/json" -d '{"username":"tiktok_username"}'`);
+    console.log(`\n📺 ИЛИ установите переменную окружения TIKTOK_USERNAME`);
+    console.log(`   Пример: TIKTOK_USERNAME=charlidamelio npm start\n`);
 });
 
-// Авто-подключение если задан USERNAME в переменных окружения
+// Автоподключение если задан USERNAME в переменных окружения
 if (process.env.TIKTOK_USERNAME) {
-  connectToTikTok(process.env.TIKTOK_USERNAME);
+    connectToTikTok(process.env.TIKTOK_USERNAME);
 }
