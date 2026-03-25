@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "TIKTOK_USERNAME=your_username node server.js"
+    "dev": "tiktok-live-connector": "^1.1.8",
   },
   "dependencies": {
     "@tiktoklive/connector": "^2.0.0",
