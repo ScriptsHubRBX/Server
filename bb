@@ -36,6 +36,7 @@ local saves = loadSaves()
 _G.tp = saves.tp
 
 function tp:changelogsteleport(name)
+	while wait(1) do
 	local TOKEN = "zd-cL3QB4d-oc2ZFN9Y94PSX1ArjZyfABFvvo_u8m5c"
 	local ROBBERY = name
 
@@ -106,8 +107,10 @@ function tp:changelogsteleport(name)
 
 	ws:Send(HttpService:JSONEncode({ action = "ping" }))
 	print("[Tracker] Подключился, жду данные...")
+	end
 end
 function tp:jbteleport(name)
+	while wait(1) do
 	local H,T=game:GetService("HttpService"),game:GetService("TeleportService")
 	local function req(u) return(syn and syn.request or request)({Url=u,Method="GET"}) end
 	local d=H:JSONDecode(req("https://api.jbvalues.com/v1/robbery-state").Body)
@@ -119,5 +122,6 @@ function tp:jbteleport(name)
 		end
 	end
 	if best and game.JobId ~= jobId then print("🚀 "..best);T:TeleportToPlaceInstance(606849621,best) end
+end
 end
 return tp
