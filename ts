@@ -6,7 +6,7 @@ _G.hook = true
 print(_G.tp)
 	if _G.tp == "change" then
 		tp:changelogsteleport("Jewelry")
-	else
+	elseif _G.tp == "jb" then
 		tp:jbteleport("TRAIN_CARGO")
 	end
 end
