@@ -91,7 +91,7 @@ function tp:changelogsteleport(name)
 		print("[Tracker] Найден сервер: " .. jobId)
 		print("[Tracker] Телепортирую...")
 
-		if name ~= "test" then
+		if name ~= "test" and game.JobId ~= jobId then
 			TeleportService:TeleportToPlaceInstance(PLACE_ID, jobId, Players.LocalPlayer)
 		else	
 			is = true
@@ -118,6 +118,6 @@ function tp:jbteleport(name)
 			if t<bt then bt=t;best=s.serverId end
 		end
 	end
-	if best then print("🚀 "..best);T:TeleportToPlaceInstance(606849621,best) end
+	if best and game.JobId ~= jobId then print("🚀 "..best);T:TeleportToPlaceInstance(606849621,best) end
 end
 return tp
