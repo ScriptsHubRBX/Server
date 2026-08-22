@@ -1,3 +1,4 @@
+local tp = {}
 local HttpService = game:GetService("HttpService")
 local SAVE_FILE = "jailbreak_hyper-saves.json"
 
@@ -34,7 +35,7 @@ end
 local saves = loadSaves()
 _G.tp = saves.tp
 
-local function changelogsteleport(name)
+function tp:changelogsteleport(name)
 	local TOKEN = "zd-cL3QB4d-oc2ZFN9Y94PSX1ArjZyfABFvvo_u8m5c"
 	local ROBBERY = name
 
@@ -106,7 +107,7 @@ local function changelogsteleport(name)
 	ws:Send(HttpService:JSONEncode({ action = "ping" }))
 	print("[Tracker] Подключился, жду данные...")
 end
-local function jbteleport(name)
+function tp:jbteleport(name)
 	local H,T=game:GetService("HttpService"),game:GetService("TeleportService")
 	local function req(u) return(syn and syn.request or request)({Url=u,Method="GET"}) end
 	local d=H:JSONDecode(req("https://api.jbvalues.com/v1/robbery-state").Body)
@@ -119,3 +120,4 @@ local function jbteleport(name)
 	end
 	if best then print("🚀 "..best);T:TeleportToPlaceInstance(606849621,best) end
 end
+return tp
