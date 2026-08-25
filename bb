@@ -145,5 +145,4 @@ function tp:random()
 		end
 	end
 end
-end
 return tp
