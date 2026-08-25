@@ -124,4 +124,26 @@ function tp:jbteleport(name)
 	if best and game.JobId ~= jobId then print("🚀 "..best);T:TeleportToPlaceInstance(606849621,best) end
 end
 end
+function tp:random()
+	while wait(1) do
+		local HttpService = game:GetService("HttpService")
+		local servers = {}
+		local PlaceId = game.PlaceId
+		local req = game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true")
+		local body = HttpService:JSONDecode(req)
+	
+		if body and body.data then
+			for i, v in next, body.data do
+				if type(v) == "table" and tonumber(v.playing) and tonumber(v.maxPlayers) and v.playing < v.maxPlayers and v.id ~= JobId then
+					table.insert(servers, 1, v.id)
+				end
+			end
+		end
+	
+		if #servers > 0 then
+			game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceId, servers[math.random(1, #servers)], game:GetService("Players").LocalPlayer)
+		end
+	end
+end
+end
 return tp
