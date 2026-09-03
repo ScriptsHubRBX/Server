@@ -37,7 +37,7 @@ _G.tp = saves.tp
 
 function tp:changelogsteleport(name)
 	while wait(1) do
-	local TOKEN = "zd-cL3QB4d-oc2ZFN9Y94PSX1ArjZyfABFvvo_u8m5c"
+	local TOKEN = "hdcktHJzIuM-BP1VLhnxNeXrX16tUabY8MkgvXuFsE4"
 	local ROBBERY = name
 
 
