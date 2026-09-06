@@ -115,13 +115,15 @@ function tp:jbteleport(name)
 	local function req(u) return(syn and syn.request or request)({Url=u,Method="GET"}) end
 	local d=H:JSONDecode(req("https://api.jbvalues.com/v1/robbery-state").Body)
 	local best,bt=nil,math.huge
+    local t = nil
 	for _,s in ipairs(d.servers) do
 		if s.robberyData and s.robberyData[name] then
-			local t=s.serverTime or 0
-			if t<bt then bt=t;best=s.serverId end
+			t=s.serverTime or 0
+			if math.floor(t)<bt then bt=math.floor(t);best=s.serverId end
 		end
 	end
-	if best and game.JobId ~= best then print("🚀 "..best);T:TeleportToPlaceInstance(606849621,best) end
+	if best and game.JobId ~= best then print("🚀 "..best);T:TeleportToPlaceInstance(606849621,best) 
+    end
 end
 end
 function tp:random()
