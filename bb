@@ -121,7 +121,7 @@ function tp:jbteleport(name)
 			if t<bt then bt=t;best=s.serverId end
 		end
 	end
-	if best and game.JobId ~= jobId then print("🚀 "..best);T:TeleportToPlaceInstance(606849621,best) end
+	if best and game.JobId ~= best then print("🚀 "..best);T:TeleportToPlaceInstance(606849621,best) end
 end
 end
 function tp:random()
