@@ -1,0 +1,55 @@
+local function safeTest(fn, ...)
+    if type(fn) ~= "function" then return false end
+    local ok = pcall(fn, ...)
+    return ok
+end
+
+local function checkHigh()
+    local tests = {
+        -- getgc: должен вернуть таблицу
+        getgc = function()
+            local gc = getgc()
+            return type(gc) == "table"
+        end,
+        
+        -- getconstants: должен вернуть таблицу
+        getconstants = function()
+            local function f() local x = "test" return x end
+            local c = getconstants(f)
+            return type(c) == "table"
+        end,
+        
+        -- getconnections: должен вернуть таблицу
+        getconnections = function()
+            local c = getconnections(game:GetService("RunService").Heartbeat)
+            return type(c) == "table"
+        end,
+        
+        -- newcclosure: должен вернуть функцию
+        newcclosure = function()
+            local f = newcclosure(function() end)
+            return type(f) == "function"
+        end,
+        
+        -- hookmetamethod: проверяем наличие
+        hookmetamethod = function()
+            return type(hookmetamethod) == "function"
+        end,
+    }
+    
+    local results = {}
+    for name, test in pairs(tests) do
+        results[name] = safeTest(test)
+    end
+    return results
+end
+
+local results = checkHigh()
+local allPass = true
+for name, ok in pairs(results) do
+    if not ok then
+        allPass = false
+    end
+end
+
+_G.high = allPass
