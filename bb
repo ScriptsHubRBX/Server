@@ -4,6 +4,7 @@ local SAVE_FILE = "jailbreak_hyper-saves.json"
 
 local defaultSaves = {
 	tp = nil,
+puzzle = false
 }
 
 local function loadSaves()
@@ -28,12 +29,14 @@ local function saveCurrent()
 	if not writefile then return end
 	local current = {
 		tp = _G.tp,
+puzzle = _G.puzzle
 	}
 	pcall(writefile, SAVE_FILE, HttpService:JSONEncode(current))
 end
 
 local saves = loadSaves()
 _G.tp = saves.tp
+_G.puzzle = saves.puzzle
 
 function tp:changelogsteleport(name)
 	while wait(1) do
